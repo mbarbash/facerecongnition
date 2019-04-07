@@ -33,26 +33,30 @@ class App extends Component {
     this.state = {
       input: '',
       imageUrl: '',
-      box: {}
+      boxes: []
     }
   }
 
   calculateFaceLocation = (data) => {
-    const clarifaiFace = data.outputs[0].data.regions[0].region_info.bounding_box;
+    const clarifaiFaces = data.outputs[0].data.regions;
     const image = document.getElementById('inputimage');
     const width = Number(image.width);
     const height = Number(image.height);
-    return {
-      "top_row": clarifaiFace.top_row * height,
-      "left_col": clarifaiFace.left_col * width,
-      "bottom_row": height - (clarifaiFace.bottom_row * height),
-      "right_col": width - (clarifaiFace.right_col  * width )
-    }
+
+    return clarifaiFaces.map((face) => { 
+      const id = face.id;
+      const boundingBox = face.region_info.bounding_box;
+      return {
+        "id": id,
+        "top_row": boundingBox.top_row * height,
+        "left_col": boundingBox.left_col * width,
+        "bottom_row": height - (boundingBox.bottom_row * height),
+        "right_col": width - (boundingBox.right_col  * width)
+      }});
   }
 
-  displayFaceBox = (box) => {
-    console.log(box);
-    this.setState({box});
+  displayFaceBoxes = (boxes) => {
+    this.setState({boxes: boxes});
   }
 
   onInputChange = (event) => {
@@ -63,7 +67,7 @@ class App extends Component {
     this.setState({ imageUrl: this.state.input});
     app.models.predict(Clarifai.FACE_DETECT_MODEL, 
       this.state.input)
-      .then(response => this.displayFaceBox(this.calculateFaceLocation(response)))
+      .then(response => this.displayFaceBoxes(this.calculateFaceLocation(response)))
       .catch(err => console.log(err)
     );
   }
@@ -76,7 +80,7 @@ class App extends Component {
         <Logo />
         <Rank />
         <ImageLinkForm onInputChange={this.onInputChange} onSubmit={this.onSubmit} />
-        <FaceRecognition imageUrl={this.state.imageUrl} box={this.state.box} />
+        <FaceRecognition imageUrl={this.state.imageUrl} boxes={this.state.boxes} />
       </div>
     );
   }
